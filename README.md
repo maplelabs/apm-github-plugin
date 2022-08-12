@@ -1,2 +1,2 @@
 # github-audit
-This service observes the GitHub commits, operations and sends to ab observability platform
+This service observes GitHub commits, operations and sends to an observability platform
