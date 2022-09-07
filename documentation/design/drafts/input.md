@@ -4,43 +4,48 @@ Github audit plugin will be using config.yaml file for taking input from user
 
 ## Sample Input Config
 ```yaml
-providers:
-  github:       # type of provider , can be butbucket or gitlabs also or normal private self hosted git 
-  - account_name: maplelabs     #github account username
-    periodicity: 300        #preiodicity for pulling changes using github APIs
+auditJobs:
+- name: auditjob1   # audit job name
+  polling_interval: 300   # polling interval to fetch data
+  metadata:   # metadata if any required like tags etc
+    tags:
+      tag1: tag1value
+  repo_type: github   # git saas provider like github,bitbucket etc
+  repo_name: testRepo   # git repository name
+  repo_config:
+    repo_url: https://www.github.com/test/testRepo    # absolute url of repository
+    credentials:      #credentials to access repository data
+      username: testRepo  # either email or username is required
+      email: restRepo@test.com
+      access_token: adkslas123a1312kba
+    branches:    # (optional) by default all branches will be monitored
+    - master
+  output:   # output contains target list
+    target_name:
+    - es1
+- name: auditjob2
+  polling_interval: 300
+  metadata:
+    tags:
+      tag1: tag1value
+  repo_type: github
+  repo_name: testRepo2
+  repo_config:
+    repo_url: https://www.github.com/test2/testRepo2
     credentials:
-      username:     #either username or email is needed (mandatory)
-      email:
-      token: XXX        #github access token to be used as it is current github auth standard 
-    repo_list:      #list of repository names
-    - github_audit
-    - log_generator
-    publisher:          
-    - es
+      username: testRepo2
+      email: restRepo2@test.com
+      access_token: adkslas123a1231312kba
+    branches:
+    - master
+    - release
+  output:
+    target_name:
     - kafka1
-    metadata:       #metadata information required if any 
-      tags:
-        project: p1
-  - account_name: snappyflow
-    periodicity: 200
-    credentials:
-      username:
-      email:
-      token: XXX
-    repo_list:
-    - repo1
-    - repo2
-    publisher:
-    - es
-    - kafka1
-    metadata:
-      tags:
-        project: p2
-
-targets:        #list of targets
-- name: es      #target name should be unique
-  type: elasticsearch       #target type
-  config:       #target config based on targets (can be different for each target) 
+targets:    #target list given as global configuration
+- name: es1
+  type: elasticsearch
+  config:
     username: ''
     password: ''
     ip: ''
@@ -49,7 +54,7 @@ targets:        #list of targets
   config:
     host: ''
     topic: ''
-- name: webhook 
+- name: webhook
   type: http
   config:
     url: https://somewebhookurl
