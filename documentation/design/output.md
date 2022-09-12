@@ -8,6 +8,8 @@ Github audit plugin will be providing output in following json format:
 {
     "type": "commit",
     "repo_type":"github",
+    "repo_name":"test_repo",
+    "repo_url":"https://github.com/testurl",
     "created_at": "2022-08-30T16:25:04Z",
     "message": "initial PR",
     "url": "https://api.github.com/repos/pramurthy/sf-apm-agent/commits/9a5a338a2b6f9d435faa9adbda1f952276c1aea8",
@@ -25,6 +27,8 @@ Github audit plugin will be providing output in following json format:
 {
     "type": "pull_request",
     "repo_type":"github",
+    "repo_name":"test_repo",
+    "repo_url":"https://github.com/testurl",
     "created_at": "2022-08-30T16:25:04Z",
     "updated_at": "2022-08-30T16:25:04Z",
     "closed_at": "",
@@ -84,6 +88,8 @@ Github audit plugin will be providing output in following json format:
 {
     "type": "pull_request_commits",
     "repo_type":"github",
+    "repo_name":"test_repo",
+    "repo_url":"https://github.com/testurl",
     "pull_request_no": "1",
     "title": "initial PR",
     "url": "https://api.github.com/repos/maplelabs/github-audit/pulls/1",
@@ -106,6 +112,8 @@ Github audit plugin will be providing output in following json format:
 {
     "type": "pull_request_comments",
     "repo_type": "github",
+    "repo_name":"test_repo",
+    "repo_url":"https://github.com/testurl",
     "pull_request_no": "1",
     "title": "initial PR",
     "url": "https://api.github.com/repos/maplelabs/github-audit/pulls/1",
@@ -130,6 +138,8 @@ Github audit plugin will be providing output in following json format:
 {
     "type": "pull_request_issues",
     "repo_type": "github",
+    "repo_name":"test_repo",
+    "repo_url":"https://github.com/testurl",
     "pull_request_no": "1",
     "title": "initial PR",
     "url": "https://api.github.com/repos/maplelabs/github-audit/pulls/1",
@@ -166,6 +176,8 @@ Github audit plugin will be providing output in following json format:
 {
     "type": "issue",
     "repo_type":"github",
+    "repo_name":"test_repo",
+    "repo_url":"https://github.com/testurl",
     "issue_no": "3",
     "state":"open",
     "title": "some issue",
