@@ -4,6 +4,8 @@ Github audit plugin will be using config.yaml file for taking input from user
 
 ## Sample Input Config
 ```yaml
+loglevel: debug # provides logging level
+logpath: ./test/ # folder path to log file (defaul: same as binary location)
 auditJobs:
 - name: auditjob1   # audit job name
   polling_interval: 300   # polling interval to fetch data
@@ -17,7 +19,7 @@ auditJobs:
     credentials:      #credentials to access repository data
       username: testRepo  # either email or username is required
       email: restRepo@test.com
-      access_token: adkslas123a1312kba
+      access_token: adkslas123a1312kba #access_token in base64 encoded or environment variable name same as auditjob name 
     branches:    # (optional) by default all branches will be monitored
     - master
   output:   # output contains target list

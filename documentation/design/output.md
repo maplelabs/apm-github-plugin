@@ -6,7 +6,7 @@ Github audit plugin will be providing output in following json format:
 ### Type: commit 
 ```json
 {
-    "type": "commit",
+    "document_type": "commit",
     "repo_type":"github",
     "repo_name":"test_repo",
     "repo_url":"https://github.com/testurl",
@@ -25,7 +25,7 @@ Github audit plugin will be providing output in following json format:
 ### Type: pull request
 ```json
 {
-    "type": "pull_request",
+    "document_type": "pull_request",
     "repo_type":"github",
     "repo_name":"test_repo",
     "repo_url":"https://github.com/testurl",
@@ -86,7 +86,7 @@ Github audit plugin will be providing output in following json format:
 ### Type: pull request commits
 ```json
 {
-    "type": "pull_request_commits",
+    "document_type": "pull_request_commits",
     "repo_type":"github",
     "repo_name":"test_repo",
     "repo_url":"https://github.com/testurl",
@@ -110,7 +110,7 @@ Github audit plugin will be providing output in following json format:
 ### Type: pull request comments
 ```json
 {
-    "type": "pull_request_comments",
+    "document_type": "pull_request_comments",
     "repo_type": "github",
     "repo_name":"test_repo",
     "repo_url":"https://github.com/testurl",
@@ -136,7 +136,7 @@ Github audit plugin will be providing output in following json format:
 ### Type: pull request issues 
 ```json
 {
-    "type": "pull_request_issues",
+    "document_type": "pull_request_issues",
     "repo_type": "github",
     "repo_name":"test_repo",
     "repo_url":"https://github.com/testurl",
@@ -174,7 +174,7 @@ Github audit plugin will be providing output in following json format:
 ### Type: issue
 ```json
 {
-    "type": "issue",
+    "document_type": "issue",
     "repo_type":"github",
     "repo_name":"test_repo",
     "repo_url":"https://github.com/testurl",
