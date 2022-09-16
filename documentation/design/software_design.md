@@ -3,7 +3,7 @@ Gitops software will provide ability to monitor git repositories for commits , c
 Gitops software will be provided as a standalone binary for different operating system. It will be supporting all major operating systems including linux(major distributions) , windows etc
 
 ## **High level diagram**
-![HLD](./software_design_high_level.png)
+![HLD](./images/software_design_high_level.png)
 [^1]: Software flow is indicated by arrows in the image above
 
 ## **Components of the software**
