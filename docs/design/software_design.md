@@ -1,6 +1,6 @@
 # **Git-Audit Plugin Design**
-Gitops software will provide ability to monitor git repositories for commits , changes etc and send the data to observability platforms like snappyflow.
-Gitops software will be provided as a standalone binary for different operating system. It will be supporting all major operating systems including linux(major distributions) , windows etc
+Git-Audit software will provide ability to monitor git repositories for commits , changes etc and send the data to observability platforms like snappyflow.
+Git-Audit software will be provided as a standalone binary for different operating system. It will be supporting all major operating systems including linux(major distributions) , windows etc
 
 ## **High level diagram**
 This diagram provides high level design for the git-audit software working.
