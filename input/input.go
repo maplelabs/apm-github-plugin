@@ -25,9 +25,7 @@ var (
 	ErrMissingAccessToken     = errors.New("missing access token")
 	ErrMissingUsername        = errors.New("missing username")
 	ErrMissingRepositoryName  = errors.New("missing repository name")
-	ErrMissingRepositoryURL   = errors.New("missing repository URL")
 	ErrMissingPollingInterval = errors.New("missing polling interval")
-	ErrMissingRepositoryType  = errors.New("missing repository type")
 	ErrMissingRepositoryHost  = errors.New("missing repository host")
 	ErrMissingRepositoryOwner = errors.New("missing repository owner")
 	ErrMissingTargetNameList  = errors.New("missing target name in audit job")
@@ -46,61 +44,76 @@ func init() {
 
 // Config represents the data parsed from config.yaml.
 type Config struct {
-	// Loglevel defines the logging level for the log file. <OPTIONAL>
+	// Loglevel defines the logging level for the log file.
 	Loglevel string `yaml:"loglevel,omitempty" json:"loglevel,omitempty"`
-	// Logpath represents the path where log file will be generated. <OPTIONAL>
+
+	// Logpath represents the path where log file will be generated.
 	Logpath string `yaml:"logpath,omitempty" json:"logpath,omitempty"`
-	// Auditjobs is list of auditjobs. <REQUIRED>
+
+	// Auditjobs is list of auditjobs.
 	AuditJobs []AuditJob `yaml:"auditJobs" json:"auditJobs"`
-	// Targets is list of targets. <REQUIRED>
+
+	// Targets is list of targets.
 	Targets []Target `yaml:"targets" json:"targets"`
 }
 
 // AuditJob represents the auditing job for which data will be fetched from remote git repository.
 type AuditJob struct {
-	// Name of the auditjob. <REQUIRED>
+	// Name of the auditjob.
 	Name string `yaml:"name" json:"name"`
-	// Polling interval of the audit job. <REQUIRED> Format: 10s , 10m , 10h , 1d
+
+	// Polling interval of the audit job.  Format: 10s , 10m , 10h , 1d
 	PollingInterval string `yaml:"polling_interval" json:"polling_interval"`
-	// Metadata if any <OPTIONAL>
+
+	// Metadata if any
 	Metadata interface{} `yaml:"metadata" json:"metadata"`
-	// Tags if any <OPTIONAL>
+
+	// Tags if any
 	Tags `yaml:"tags,omitempty" json:"tags"`
-	// Output targets. <REQUIRED>
+
+	// Output targets.
 	Output `yaml:"output" json:"output"`
-	// Repository type , options include github , gitlabs etc. <REQUIRED>
+
+	// Repository type , options include github , gitlabs etc.
 	RepositoryHost string `yaml:"repo_host" json:"repo_host"`
-	// RepositoryName represents the name of the repository. <REQUIRED>
+
+	// RepositoryName represents the name of the repository.
 	RepositoryName string `yaml:"repo_name" json:"repo_name"`
-	// RepositoryName represents the name of the repository. <REQUIRED>
+
+	// RepositoryName represents the name of the repository.
 	RepositoryOwner string `yaml:"repo_owner" json:"repo_owner"`
-	// RepositoryConfig defines reposiroty config. <REQUIRED>
+
+	// RepositoryConfig defines repository config.
 	RepositoryConfig `yaml:"repo_config" json:"repo_config"`
 }
 
 // RepositoryConfig represents repostory configurations.
 type RepositoryConfig struct {
-	// RepositoryType is whether public or private repo. <REQUIRED>
+	// RepositoryType is whether public or private repo.
 	RepositoryType string
-	// RepositoryURL is the url for the repository. <REQUIRED>
+
+	// RepositoryURL is the url for the repository.
 	RepositoryURL string `yaml:"repo_url" json:"repo_url"`
-	// RepositoryCredentials represents repository credentials. <REQUIRED>
+
+	// RepositoryCredentials represents repository credentials.
 	RepositoryCredentials `yaml:"credentials" json:"credentials"`
-	//Branches represents branches that needs to be monitored. <OPTIONAL>
+
+	//Branches represents branches that needs to be monitored.
 	Branches []string `yaml:"branches" json:"branches"`
 }
 
 // RepositoryCredentials consists of credential needed to authenticate with repository.
 type RepositoryCredentials struct {
-	//Username of the repository. <REQUIRED for Private Repo Only>
+	//Username of the repository.
 	Username string `yaml:"username" json:"username"`
-	//AccessToken for accessing the github's APIs. <REQUIRED for Private Repo Only>
+
+	//AccessToken for accessing the github's APIs.
 	AccessToken string `yaml:"access_token" json:"access_token"`
 }
 
 // Output represents the target where data will be sent.
 type Output struct {
-	//TargetName consists of the target names to which auditjob data needs to be sent. <REQUIRED>
+	//TargetName consists of the target names to which auditjob data needs to be sent.
 	TargetName []string `yaml:"target_name" json:"target_name"`
 }
 
@@ -109,10 +122,12 @@ type Tags map[string]string
 
 // Target represents the target where data will be published.
 type Target struct {
-	//Name of the target. <REQUIRED>
+	//Name of the target.
 	Name string `yaml:"name" json:"name"`
-	//Type of the target , possible values (elasticsearch , kafka-rest etc). <REQUIRED>
+
+	//Type of the target , possible values (elasticsearch , kafka-rest etc).
 	Type string `yaml:"type" json:"type"`
+
 	//TargetConfig consist of the target configurations.
 	TargetConfig map[string]string `yaml:"config" json:"config"`
 }
@@ -143,14 +158,6 @@ func (c *Config) validate() error {
 		// checking if repository name is not empty.
 		if j.RepositoryName == "" {
 			return ErrMissingRepositoryName
-		}
-		// checking if repository url is not empty.
-		if j.RepositoryURL == "" {
-			return ErrMissingRepositoryURL
-		}
-		// checking if repository type is not empty.
-		if j.RepositoryType == "" {
-			return ErrMissingRepositoryType
 		}
 		// checking if repository host is not empty.
 		if j.RepositoryHost == "" {
@@ -240,11 +247,11 @@ func InitConfig(configPath string) (Config, error) {
 		log.Errorf("error[%v] in unmarshaling config file to Config struct", err)
 		return Config{}, err
 	}
-	// validating config
-	log.Infof("validating fields in config file located at %s", configPath)
 	// adding default values for missing fields
 	log.Infof("populating default field values in github-audit config")
 	conf.populateDefaultValues()
+	// validating config
+	log.Infof("validating fields in config file located at %s", configPath)
 	err = conf.validate()
 	if err != nil {
 		log.Errorf("error[%v] in validating config file", err)

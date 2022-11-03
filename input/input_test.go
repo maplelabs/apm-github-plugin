@@ -33,8 +33,6 @@ func TestConfig_validate(t *testing.T) {
 						RepositoryName:  "testRepo",
 						RepositoryOwner: "testOwner",
 						RepositoryConfig: RepositoryConfig{
-							RepositoryType: "public",
-							RepositoryURL:  "https://testurl",
 							RepositoryCredentials: RepositoryCredentials{
 								Username:    "testUSer",
 								AccessToken: "1234adsr",
@@ -90,8 +88,6 @@ func TestConfig_validate(t *testing.T) {
 						RepositoryName:  "testRepo",
 						RepositoryOwner: "testOwner",
 						RepositoryConfig: RepositoryConfig{
-							RepositoryType: "private",
-							RepositoryURL:  "https://testurl",
 							RepositoryCredentials: RepositoryCredentials{
 								Username:    "testUSer",
 								AccessToken: "1234adsr",
@@ -119,8 +115,6 @@ func TestConfig_validate(t *testing.T) {
 						RepositoryName:  "",
 						RepositoryOwner: "testOwner",
 						RepositoryConfig: RepositoryConfig{
-							RepositoryType: "public",
-							RepositoryURL:  "https://testurl",
 							RepositoryCredentials: RepositoryCredentials{
 								Username:    "testUSer",
 								AccessToken: "",
@@ -244,8 +238,6 @@ func TestInitConfig(t *testing.T) {
 				RepositoryName:  "testRepo",
 				RepositoryOwner: "testOwner",
 				RepositoryConfig: RepositoryConfig{
-					RepositoryType: "private",
-					RepositoryURL:  "https://testurl",
 					RepositoryCredentials: RepositoryCredentials{
 						Username:    "testUSer",
 						AccessToken: "1234adsr",
@@ -279,7 +271,6 @@ func TestInitConfig(t *testing.T) {
 				RepositoryName:  "testRepo",
 				RepositoryOwner: "testOwner",
 				RepositoryConfig: RepositoryConfig{
-					RepositoryURL: "",
 					RepositoryCredentials: RepositoryCredentials{
 						Username:    "testUSer",
 						AccessToken: "1234adsr",

@@ -11,12 +11,12 @@ logpath: ./test.log
 auditJobs:
 ## audit job name <REQUIRED>
 - name: auditjob1
-## polling interval to fetch data to be defined  <REQUIRED> , Default: 5s, 10m etc  
+## polling interval to fetch data to be defined  <REQUIRED> , Default: 5m  
   polling_interval: 5m 
 ## metadata if any required like tags etc
   metadata:
   tags:
-    tag1: tag1value
+    key1: value1
   ## git saas provider like github,bitbucket etc <REQUIRED>
   repo_host: github
   ## git repository name  <REQUIRED>
@@ -24,15 +24,11 @@ auditJobs:
   ## git repository owner  <REQUIRED>
   repo_owner: testOwner   
   repo_config:
-  ## absolute url of repository <REQUIRED>
-    repo_url: https://www.github.com/test/testRepo
-    ## private or public repository <REQUIRED>
-    repo_type: public      
-    ## credentials to access repository data <REQUIRED for private repo>
+    ## credentials to access repository data <REQUIRED>
     credentials:  
-      ## username is required    <REQUIRED for private repo>
+      ## username is required    <REQUIRED>
       username: testRepo  
-      ## API token in base64 encode format. <REQUIRED for private repo> , cannot be empty
+      ## API token in base64 encode format. <REQUIRED>
       access_token: adkslas123a1312kba
     ## (optional) by default all branches will be monitored
     branches:
@@ -45,13 +41,11 @@ auditJobs:
   polling_interval: 300s
   metadata:
   tags:
-    tag1: tag1value
+    kye2: value2
   repo_host: github
   repo_name: testRepo2
   repo_owner: testOwner2
   repo_config:
-    repo_type: private
-    repo_url: https://www.github.com/test2/testRepo2
     credentials:
       username: testRepo2
       access_token: test123
