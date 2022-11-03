@@ -29,10 +29,12 @@ func TestConfig_validate(t *testing.T) {
 						Output: Output{
 							TargetName: []string{"testtarget1"},
 						},
-						RepositoryType: "github",
-						RepositoryName: "testRepo",
+						RepositoryHost:  "github",
+						RepositoryName:  "testRepo",
+						RepositoryOwner: "testOwner",
 						RepositoryConfig: RepositoryConfig{
-							RepositoryURL: "https://testurl",
+							RepositoryType: "public",
+							RepositoryURL:  "https://testurl",
 							RepositoryCredentials: RepositoryCredentials{
 								Username:    "testUSer",
 								AccessToken: "1234adsr",
@@ -44,7 +46,7 @@ func TestConfig_validate(t *testing.T) {
 					{
 						Name: "testtarget1",
 						Type: "elasticsearch",
-						TargetConfig: TargetConfig{
+						TargetConfig: map[string]string{
 							"host":     "test",
 							"protocol": "http",
 						},
@@ -63,7 +65,7 @@ func TestConfig_validate(t *testing.T) {
 					{
 						Name: "testtarget1",
 						Type: "elasticsearch",
-						TargetConfig: TargetConfig{
+						TargetConfig: map[string]string{
 							"host":     "test",
 							"protocol": "http",
 						},
@@ -84,10 +86,12 @@ func TestConfig_validate(t *testing.T) {
 						Output: Output{
 							TargetName: []string{"testtarget1"},
 						},
-						RepositoryType: "github",
-						RepositoryName: "testRepo",
+						RepositoryHost:  "github",
+						RepositoryName:  "testRepo",
+						RepositoryOwner: "testOwner",
 						RepositoryConfig: RepositoryConfig{
-							RepositoryURL: "https://testurl",
+							RepositoryType: "private",
+							RepositoryURL:  "https://testurl",
 							RepositoryCredentials: RepositoryCredentials{
 								Username:    "testUSer",
 								AccessToken: "1234adsr",
@@ -111,10 +115,12 @@ func TestConfig_validate(t *testing.T) {
 						Output: Output{
 							TargetName: []string{"testtarget1"},
 						},
-						RepositoryType: "github",
-						RepositoryName: "",
+						RepositoryHost:  "github",
+						RepositoryName:  "",
+						RepositoryOwner: "testOwner",
 						RepositoryConfig: RepositoryConfig{
-							RepositoryURL: "https://testurl",
+							RepositoryType: "public",
+							RepositoryURL:  "https://testurl",
 							RepositoryCredentials: RepositoryCredentials{
 								Username:    "testUSer",
 								AccessToken: "",
@@ -126,7 +132,7 @@ func TestConfig_validate(t *testing.T) {
 					{
 						Name: "testtarget1",
 						Type: "elasticsearch",
-						TargetConfig: TargetConfig{
+						TargetConfig: map[string]string{
 							"host":     "test",
 							"protocol": "http",
 						},
@@ -234,10 +240,12 @@ func TestInitConfig(t *testing.T) {
 				Output: Output{
 					TargetName: []string{"testtarget1"},
 				},
-				RepositoryType: "github",
-				RepositoryName: "testRepo",
+				RepositoryHost:  "github",
+				RepositoryName:  "testRepo",
+				RepositoryOwner: "testOwner",
 				RepositoryConfig: RepositoryConfig{
-					RepositoryURL: "https://testurl",
+					RepositoryType: "private",
+					RepositoryURL:  "https://testurl",
 					RepositoryCredentials: RepositoryCredentials{
 						Username:    "testUSer",
 						AccessToken: "1234adsr",
@@ -250,7 +258,7 @@ func TestInitConfig(t *testing.T) {
 			{
 				Name: "testtarget1",
 				Type: "elasticsearch",
-				TargetConfig: TargetConfig{
+				TargetConfig: map[string]string{
 					"host":     "test",
 					"protocol": "http",
 				},
@@ -267,8 +275,9 @@ func TestInitConfig(t *testing.T) {
 				Output: Output{
 					TargetName: []string{"testtarget1"},
 				},
-				RepositoryType: "github",
-				RepositoryName: "",
+				RepositoryHost:  "github",
+				RepositoryName:  "testRepo",
+				RepositoryOwner: "testOwner",
 				RepositoryConfig: RepositoryConfig{
 					RepositoryURL: "",
 					RepositoryCredentials: RepositoryCredentials{
@@ -282,7 +291,7 @@ func TestInitConfig(t *testing.T) {
 			{
 				Name: "testtarget1",
 				Type: "elasticsearch",
-				TargetConfig: TargetConfig{
+				TargetConfig: map[string]string{
 					"host":     "test",
 					"protocol": "http",
 				},
