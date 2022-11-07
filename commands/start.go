@@ -11,6 +11,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	// github-audit pid file
+	GithubAuditPIDFile = "github-audit.process"
+)
+
 // startCmd represents the start command.
 var startCmd = &cobra.Command{
 	Use:   "start",
@@ -30,16 +35,22 @@ Ex: github-audit start --config=<path to config.yaml>`,
 // start starts github-audit as a background process.
 // it starts github-audit and saves it's process pid in git-audit.process file.
 func start() error {
-	log.Info("starting github background process")
-	cmd := exec.Command("./github-audit", "--config", ConfigFile)
+	log.Info("starting github-audit background process")
+	// getting github-audit binary path
+	githubAuditPath, err := os.Executable()
+	if err != nil {
+		log.Errorf("error[%v] in getting github-audit binary path", err)
+		return err
+	}
+	cmd := exec.Command(githubAuditPath, "--config", ConfigFile)
 	// starting as deamon process
-	err := cmd.Start()
+	err = cmd.Start()
 	if err != nil {
 		log.Errorf("error[%v] in starting github-audit background process", err)
 		return err
 	}
 	log.Infof("github-audit process started successfully in background with pid %v", cmd.Process.Pid)
-	err = os.WriteFile("git-audit.process", []byte(fmt.Sprintf("%v", cmd.Process.Pid)), 0644)
+	err = os.WriteFile(GithubAuditPIDFile, []byte(fmt.Sprintf("%v", cmd.Process.Pid)), 0644)
 	if err != nil {
 		log.Errorf("error[%v] in writing github-audit.process pid file", err)
 		return err

@@ -17,6 +17,12 @@ import (
 var (
 	// log is used for adding logs
 	log logger.Logger
+	// version of github-audit (set while compilation)
+	version string
+	// build time of github-audit (set while compilation)
+	buildTime string
+	// commit hash of github-audit (set while compilation)
+	commit string
 )
 
 func init() {
@@ -24,10 +30,19 @@ func init() {
 	log = logger.GetLogger()
 }
 
+// settings build information for github-audit
+func setBuildInfo() {
+	commands.GithubAuditBuildInfo.Version = version
+	commands.GithubAuditBuildInfo.Commit = commit
+	commands.GithubAuditBuildInfo.BuildTime = buildTime
+}
+
 func main() {
 	var wg sync.WaitGroup
 	// this context is used throughout github-audit lifecycle
 	mainCtx, mainCtxCancel := context.WithCancel(context.Background())
+
+	setBuildInfo()
 
 	// this logic handles graceful shutdown for github-audit
 	c := make(chan os.Signal, 1)

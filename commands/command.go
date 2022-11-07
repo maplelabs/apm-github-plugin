@@ -5,6 +5,7 @@ package commands
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	"github.com/maplelabs/github-audit/input"
@@ -18,7 +19,21 @@ var (
 	//ConfigFile stores config.yaml location
 	ConfigFile string
 	log        logger.Logger
+	// GithubAuditBuildInfo contains build and version information for github-audit
+	GithubAuditBuildInfo BuildInfo
 )
+
+// BuildInfo contains information related to github-audit build and version.
+type BuildInfo struct {
+	// version of github-audit.
+	Version string
+
+	// build time of github-audit.
+	BuildTime string
+
+	//commit hash of github-audit.
+	Commit string
+}
 
 // rootCmd represents the base command which is executed in normal run of github-audit.
 var rootCmd = &cobra.Command{
@@ -38,13 +53,27 @@ Ex: github-audit stop
 	},
 }
 
+// versionCmd represents the version command for printing github-audit build information
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "print the version of github-audit",
+	Long:  `All software has versions. This is github-audit's version with build information`,
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Printf("Github-Audit\n")
+		fmt.Printf("Version: %s\n", GithubAuditBuildInfo.Version)
+		fmt.Printf("BuildTime: %s\n", GithubAuditBuildInfo.BuildTime)
+		fmt.Printf("GitCommit: %s\n", GithubAuditBuildInfo.Commit)
+		os.Exit(0)
+	},
+}
+
 // Execute is the starting point to rootCmd.
 func Execute(ctx context.Context) {
 	// disabled default completion options.
 	rootCmd.CompletionOptions.DisableDefaultCmd = true
 	if err := rootCmd.ExecuteContext(ctx); err != nil {
 		log.Errorf("error[%v] in root command execution", err)
-		os.Exit(0)
+		os.Exit(1)
 	}
 }
 
@@ -55,6 +84,8 @@ func init() {
 	logger.ConfigFile = ConfigFile
 	//setting log file
 	log = logger.GetLogger()
+	// added version command
+	rootCmd.AddCommand(versionCmd)
 	// over writing help command to exit on call
 	origHelpFunc := rootCmd.HelpFunc()
 	rootCmd.SetHelpFunc(func(cmd *cobra.Command, args []string) {

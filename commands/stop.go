@@ -5,7 +5,7 @@ package commands
 
 import (
 	"os"
-	"os/exec"
+	"strconv"
 
 	"github.com/spf13/cobra"
 )
@@ -27,18 +27,27 @@ Ex: github-audit stop`,
 // stop stops github-audit background process.
 // it starts github-audit and saves it's process pid in git-audit.process file.
 func stop() error {
-	fileByte, err := os.ReadFile("git-audit.process")
+	var pid int
+	fileByte, err := os.ReadFile(GithubAuditPIDFile)
 	if err != nil {
 		log.Errorf("error[%v] in reading github-audit.process pid file", err)
 		return err
 	}
 	log.Debugf("github-audit pid as read from github.process is %v", string(fileByte))
 	log.Infof("stopping github-audit process")
-	// stopping github-audit using linux kill command
-	cmd := exec.Command("kill", "-9", string(fileByte))
-	err = cmd.Run()
+	pid, err = strconv.Atoi(string(fileByte))
 	if err != nil {
-		log.Errorf("error[%v] in stopping github-audit process", err)
+		log.Errorf("error[%v] in converting pid string to integer")
+		return err
+	}
+	proc, err := os.FindProcess(pid)
+	if err != nil {
+		log.Errorf("error[%v] in finding github-audit process with pid %v", err, pid)
+		return err
+	}
+	err = proc.Kill()
+	if err != nil {
+		log.Errorf("error[%v] in killing github-audit process with pid %v", err, pid)
 		return err
 	}
 	return nil
