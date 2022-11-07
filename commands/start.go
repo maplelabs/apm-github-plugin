@@ -41,7 +41,8 @@ Ex: github-audit start --config=<path to config.yaml>`,
 func start() error {
 	// checking if pidFile exists , only starting if pidFile does not exists
 	_, err := os.Stat(pidFile)
-	if err != nil {
+	// pidFile exists , so github-audit already running
+	if err == nil {
 		log.Errorf("error[github-audit already running]")
 		fileByte, err := os.ReadFile(pidFile)
 		if err != nil {
