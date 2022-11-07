@@ -41,9 +41,8 @@ func main() {
 	var wg sync.WaitGroup
 	// this context is used throughout github-audit lifecycle
 	mainCtx, mainCtxCancel := context.WithCancel(context.Background())
-
+	// setting build information
 	setBuildInfo()
-
 	// this logic handles graceful shutdown for github-audit
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM)

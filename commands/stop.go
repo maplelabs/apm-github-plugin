@@ -1,9 +1,10 @@
 /*
-Package commands contains github-audit shell commands related logic.
+	Package commands contains github-audit shell commands related logic.
 */
 package commands
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 
@@ -18,9 +19,13 @@ var stopCmd = &cobra.Command{
 To stop github-audit
 Ex: github-audit stop`,
 	Args: cobra.NoArgs,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 		err := stop()
-		return err
+		if err != nil {
+			fmt.Printf("error[%v] while stopping github-audit", err)
+			os.Exit(1)
+		}
+		os.Exit(0)
 	},
 }
 
@@ -28,7 +33,7 @@ Ex: github-audit stop`,
 // it starts github-audit and saves it's process pid in git-audit.process file.
 func stop() error {
 	var pid int
-	fileByte, err := os.ReadFile(GithubAuditPIDFile)
+	fileByte, err := os.ReadFile(pidFile)
 	if err != nil {
 		log.Errorf("error[%v] in reading github-audit.process pid file", err)
 		return err
@@ -50,7 +55,9 @@ func stop() error {
 		log.Errorf("error[%v] in killing github-audit process with pid %v", err, pid)
 		return err
 	}
-	return nil
+	// removing pidFile after stopping github-audit
+	err = os.Remove(pidFile)
+	return err
 }
 
 func init() {

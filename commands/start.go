@@ -13,7 +13,7 @@ import (
 
 const (
 	// github-audit pid file
-	GithubAuditPIDFile = "github-audit.process"
+	pidFile = "github-audit.process"
 )
 
 // startCmd represents the start command.
@@ -26,15 +26,29 @@ Ex: github-audit start
 	
 To start github-audit with custom config.yaml location
 Ex: github-audit start --config=<path to config.yaml>`,
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 		err := start()
-		return err
+		if err != nil {
+			fmt.Printf("error[%v] while starting github-audit", err)
+			os.Exit(1)
+		}
+		os.Exit(0)
 	},
 }
 
 // start starts github-audit as a background process.
 // it starts github-audit and saves it's process pid in git-audit.process file.
 func start() error {
+	// checking if pidFile exists , only starting if pidFile does not exists
+	_, err := os.Stat(pidFile)
+	if err != nil {
+		log.Errorf("error[github-audit already running]")
+		fileByte, err := os.ReadFile(pidFile)
+		if err != nil {
+			log.Errorf("error[%v] in reading github-audit.process pid file", err)
+		}
+		return fmt.Errorf("github-audit already running with pid %v , please stop first before starting", string(fileByte))
+	}
 	log.Info("starting github-audit background process")
 	// getting github-audit binary path
 	githubAuditPath, err := os.Executable()
@@ -50,7 +64,7 @@ func start() error {
 		return err
 	}
 	log.Infof("github-audit process started successfully in background with pid %v", cmd.Process.Pid)
-	err = os.WriteFile(GithubAuditPIDFile, []byte(fmt.Sprintf("%v", cmd.Process.Pid)), 0644)
+	err = os.WriteFile(pidFile, []byte(fmt.Sprintf("%v", cmd.Process.Pid)), 0644)
 	if err != nil {
 		log.Errorf("error[%v] in writing github-audit.process pid file", err)
 		return err
