@@ -60,7 +60,8 @@ func stop() error {
 	if err != nil {
 		log.Errorf("error[%v] in deleting github-audit pid file %v", err, pidFile)
 	}
-	return err
+	// stop is successfull here , even if pifFile is not deleted
+	return nil
 }
 
 func init() {
