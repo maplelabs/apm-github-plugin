@@ -57,6 +57,9 @@ func stop() error {
 	}
 	// removing pidFile after stopping github-audit
 	err = os.Remove(pidFile)
+	if err != nil {
+		log.Errorf("error[%v] in deleting github-audit pid file %v", err, pidFile)
+	}
 	return err
 }
 
