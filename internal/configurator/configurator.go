@@ -4,7 +4,6 @@
 package configurator
 
 import (
-	"encoding/base64"
 	"errors"
 	"strings"
 	"time"
@@ -13,6 +12,7 @@ import (
 	"github.com/maplelabs/github-audit/input"
 	"github.com/maplelabs/github-audit/internal/task"
 	"github.com/maplelabs/github-audit/logger"
+	"github.com/maplelabs/github-audit/utils"
 )
 
 const (
@@ -56,7 +56,7 @@ func createTask(auditJob input.AuditJob, targets []input.Target) (*task.Task, er
 	var err error
 	task := task.Newtask()
 	if auditJob.AccessToken != "" {
-		decodedKey, err = DecodeAccessKey(auditJob.AccessToken)
+		decodedKey, err = utils.DecodeAccessKey(auditJob.AccessToken)
 		if err != nil {
 			log.Errorf("error[%v] in decoding accessToken for audit job %v", err, auditJob.Name)
 			return task, err
@@ -82,16 +82,6 @@ func createTaskParam(auditJob input.AuditJob, targets []input.Target, decodedKey
 	taskParam.Targets = targets
 	taskParam.DecodeAccessKey = decodedKey
 	return taskParam
-}
-
-// DecodeAccessKey decodes the base64 encoded access key as provided in config.yaml or through environment variable.
-func DecodeAccessKey(key string) (string, error) {
-	decodedKey, err := base64.StdEncoding.DecodeString(key)
-	if err != nil {
-		log.Errorf("error[%v] in decoding accessToken", err)
-		return "", err
-	}
-	return string(decodedKey), nil
 }
 
 // convertIntervalToDuration converts the scheduling interval as provided in config.yaml to golang's duration
