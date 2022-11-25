@@ -6,8 +6,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"os"
+	"runtime"
 	"strconv"
 	"sync"
 	"time"
@@ -27,6 +27,8 @@ var (
 	taskStatsFile = "taskStats.json"
 	// taskStatsFile keeps concurrency good between multiple goroutines handling task stats.
 	taskStatsMutex = &sync.Mutex{}
+	// saveTaskPeriodicInterval is interval for which checkpoint for task is done
+	saveTaskPeriodicInterval = 30 * time.Second
 )
 
 // Task represents a single task where one auditjob = one task
@@ -90,19 +92,20 @@ func init() {
 	if err == nil {
 		fileByte, err := os.ReadFile(taskStatsFile)
 		if err != nil {
-			log.Error(err)
+			log.Error("error[%v] in reading task stats file", err)
 		}
 		err = json.Unmarshal(fileByte, &TaskStatsMap)
 		if err != nil {
-			log.Error(err)
+			log.Error("error[%v] in unmarshalling task stats file", err)
 		}
+	} else {
+		log.Error("error[%v] in reading task stats file", err)
 	}
 }
 
 // SaveTaskStatsPeriodic runs periodically to save task stats to file system (checkpointing mechanism).
 func SaveTaskStatsPeriodic(ctx context.Context) {
-	// 30 seconds periodic
-	ticker := time.NewTicker(30 * time.Second)
+	ticker := time.NewTicker(saveTaskPeriodicInterval)
 	for {
 		select {
 		case <-ticker.C:
@@ -110,7 +113,6 @@ func SaveTaskStatsPeriodic(ctx context.Context) {
 			tBytes, err := json.Marshal(TaskStatsMap)
 			if err != nil {
 				log.Errorf("error[%v] in marshalling TaskStatsMap for checkpointing", err)
-				log.Error(err)
 			}
 			err = os.WriteFile(taskStatsFile, tBytes, 0644)
 			if err != nil {
@@ -118,7 +120,7 @@ func SaveTaskStatsPeriodic(ctx context.Context) {
 			}
 			taskStatsMutex.Unlock()
 		case <-ctx.Done():
-			fmt.Println("stopping periodic save task stats routine")
+			log.Info("stopping periodic save task stats routine")
 			return
 		}
 	}
@@ -184,32 +186,43 @@ func (t *Task) Start() error {
 	}
 	gp := gitprovider.NewGitProvider(t.Config.RepositoryHost, t.Config.RepositoryOwner, t.Config.RepositoryName, t.Config.Username, t.DecodeAccessKey)
 
-	// executing for each target in task
+	// max concurrency guard to control goroutines
+	maxConcurrencyGuard := make(chan struct{}, runtime.NumCPU()*2)
+	wg := &sync.WaitGroup{}
+	// executing each target in task in separate goroutines
 	for _, tar := range t.Targets {
-		// getting new publisher
-		pb, err := publisher.NewPublisher(tar.Type, tar.TargetConfig)
-		if err != nil {
-			log.Errorf("error[%v] in getting publisher for the task with ID %v", err, t.ID)
-			continue
-		}
-		// getting new dataprocessor
-		dp := dataprocessor.NewDataProcessor(t.Config.RepositoryHost, t.Config.RepositoryName, t.Config.RepositoryURL)
-		err = t.collectAndPublishCommits(gp, pb, dp, ts)
-		if err != nil {
-			log.Errorf("error[%v] in collecting commits for task with ID %v", err, t.ID)
-			continue
-		}
-		err = t.collectAndPublishPullRequests(gp, pb, dp, ts)
-		if err != nil {
-			log.Errorf("error[%v] in collecting pull requests for task with ID %v", err, t.ID)
-			continue
-		}
-		err = t.collectAndPublishIssues(gp, pb, dp, ts)
-		if err != nil {
-			log.Errorf("error[%v] in collecting issues for task with ID %v", err, t.ID)
-			continue
-		}
+		maxConcurrencyGuard <- struct{}{}
+		wg.Add(1)
+		go func(tar input.Target, maxConcurrencyGuard chan struct{}, wg *sync.WaitGroup) {
+			defer wg.Done()
+			defer func() { <-maxConcurrencyGuard }()
+			// getting new publisher
+			pb, err := publisher.NewPublisher(tar.Type, tar.TargetConfig)
+			if err != nil {
+				log.Errorf("error[%v] in getting publisher for the task with ID %v", err, t.ID)
+				return
+			}
+			// getting new dataprocessor
+			dp := dataprocessor.NewDataProcessor(t.Config.RepositoryHost, t.Config.RepositoryName, t.Config.RepositoryURL)
+			err = t.collectAndPublishCommits(gp, pb, dp, ts)
+			if err != nil {
+				log.Errorf("error[%v] in collecting commits for task with ID %v", err, t.ID)
+				return
+			}
+			err = t.collectAndPublishPullRequests(gp, pb, dp, ts)
+			if err != nil {
+				log.Errorf("error[%v] in collecting pull requests for task with ID %v", err, t.ID)
+				return
+			}
+			err = t.collectAndPublishIssues(gp, pb, dp, ts)
+			if err != nil {
+				log.Errorf("error[%v] in collecting issues for task with ID %v", err, t.ID)
+				return
+			}
+		}(tar, maxConcurrencyGuard, wg)
 	}
+	// waiting for all concurrent goroutines to complete
+	wg.Wait()
 	ts, err = getTaskStats(t.ID)
 	if err != nil {
 		log.Errorf("error[%v] in getting task stats for task with ID %v", err, t.ID)
@@ -229,29 +242,47 @@ func (t *Task) Stop() error {
 // collectAndPublishCommits collects commits and publish them to targets.
 func (t *Task) collectAndPublishCommits(gp gitprovider.GitProvider, pb publisher.Publisher, dp dataprocessor.DataProcessor, ts TaskStats) error {
 	var err error
+	errChan := make(chan error)
+	// max concurrency guard to control goroutines
+	maxConcurrencyGuard := make(chan struct{}, runtime.NumCPU()*2)
 	for _, br := range t.Config.Branches {
-		commitBytes, err := gp.GetCommits(ts.LastCommitTime[br], time.Now(), br)
-		if err != nil {
-			log.Errorf("error[%v] in getting commits from gitprovider for task with ID %v", err, t.ID)
-			continue
-		}
-		processed, err := dp.ProcessCommits(commitBytes, t.Config.Tags)
-		if err != nil {
-			log.Errorf("error[%v] in processing commits for task with ID %v", err, t.ID)
-			continue
-		}
-		err = pb.Publish(processed)
-		if err != nil {
-			log.Errorf("error[%v] in publishing commits for task with ID %v", err, t.ID)
-			continue
-		}
-		// saving stats after finished task
-		for _, v := range processed {
-			//taking latest commit time
-			lastCommitTime := v.(dataprocessor.Commit).CreatedAt
-			ts.LastCommitTime[br] = lastCommitTime
-			saveTaskStats(t.ID, ts)
-			break
+		maxConcurrencyGuard <- struct{}{}
+		// executing each branch in separate goroutines
+		go func(br string, maxConcurrencyGuard chan struct{}, errChan chan error) {
+			defer func() { <-maxConcurrencyGuard }()
+			commitBytes, err := gp.GetCommits(ts.LastCommitTime[br], time.Now(), br)
+			if err != nil {
+				log.Errorf("error[%v] in getting commits from gitprovider for task with ID %v", err, t.ID)
+				errChan <- err
+				return
+			}
+			processed, err := dp.ProcessCommits(commitBytes, t.Config.Tags)
+			if err != nil {
+				log.Errorf("error[%v] in processing commits for task with ID %v", err, t.ID)
+				errChan <- err
+				return
+			}
+			err = pb.Publish(processed)
+			if err != nil {
+				log.Errorf("error[%v] in publishing commits for task with ID %v", err, t.ID)
+				errChan <- err
+				return
+			}
+			// saving stats after finished task
+			for _, v := range processed {
+				//taking latest commit time
+				lastCommitTime := v.(dataprocessor.Commit).CreatedAt
+				ts.LastCommitTime[br] = lastCommitTime
+				saveTaskStats(t.ID, ts)
+				break
+			}
+			errChan <- nil
+		}(br, maxConcurrencyGuard, errChan)
+	}
+	//waiting for all goroutines to complete based on errChannel
+	for errVal := range errChan {
+		if errVal != nil {
+			err = errVal
 		}
 	}
 	return err
