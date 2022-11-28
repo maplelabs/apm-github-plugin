@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	retryhttp "github.com/hashicorp/go-retryablehttp"
@@ -205,6 +206,7 @@ func (es *ElasticSearchClient) Publish(data []interface{}) error {
 // getURL returns url to elasticendpoint for writing data
 func (es *ElasticSearchClient) getURL() string {
 	var url, esType string
+	es.ES_7x = es.getESVersion()
 	if !es.ES_7x {
 		esType = "doc"
 	} else {
@@ -218,4 +220,56 @@ func (es *ElasticSearchClient) getURL() string {
 		url = fmt.Sprintf("https://%s:%s/%s/%s/", es.Host, es.Port, es.Index, esType)
 	}
 	return url
+}
+
+// getESVersion returns if Es version is greater than 7.x or not
+func (es *ElasticSearchClient) getESVersion() bool {
+	type EsResponse struct {
+		Name        string `json:"name"`
+		ClusterName string `json:"cluster_name"`
+		ClusterUUID string `json:"cluster_uuid"`
+		Version     struct {
+			Number                           string    `json:"number"`
+			BuildFlavor                      string    `json:"build_flavor"`
+			BuildType                        string    `json:"build_type"`
+			BuildHash                        string    `json:"build_hash"`
+			BuildDate                        time.Time `json:"build_date"`
+			BuildSnapshot                    bool      `json:"build_snapshot"`
+			LuceneVersion                    string    `json:"lucene_version"`
+			MinimumWireCompatibilityVersion  string    `json:"minimum_wire_compatibility_version"`
+			MinimumIndexCompatibilityVersion string    `json:"minimum_index_compatibility_version"`
+		} `json:"version"`
+		Tagline string `json:"tagline"`
+	}
+	var url string
+	switch es.Protocol {
+	case "http":
+		url = fmt.Sprintf("http://%s:%s/", es.Host, es.Port)
+	case "https":
+		url = fmt.Sprintf("https://%s:%s/", es.Host, es.Port)
+	}
+	client := HTTPClientWithRetry()
+	resp, err := client.Get(url)
+	if err != nil {
+		log.Errorf("error[%v] request to get es version failed with error", err)
+		return false
+	}
+	defer resp.Body.Close()
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Errorf("error[%v] failed to read response body", err)
+		return false
+	}
+	var esResp EsResponse
+	err = json.Unmarshal(respBody, &esResp)
+	if err != nil {
+		log.Errorf("error[%v] failed to Unmarshal response body", err)
+		return false
+	}
+	version := esResp.Version.Number
+	if strings.HasPrefix(version, "7") {
+		return true
+	} else {
+		return false
+	}
 }

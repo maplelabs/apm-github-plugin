@@ -36,7 +36,7 @@ const (
 
 // default config log timestamp
 const (
-	TimestampFormat    = "15:04:05.999 02/01/2006 (MST)"
+	TimestampFormat    = "15:04:05.999 02/01/2006 (UTC)"
 	DEFAULTLOGFILEPATH = "./github-audit.log"
 	DEFAULTLOGLEVEL    = InfoLevel
 )
