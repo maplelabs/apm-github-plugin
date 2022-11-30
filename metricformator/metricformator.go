@@ -13,7 +13,7 @@ var (
 	log logger.Logger
 
 	// file storing metric formatting related information
-	metricFormator = "metricformator.json"
+	metricFormator = "metricformator/metricformator.json"
 )
 
 func init() {

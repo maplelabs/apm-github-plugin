@@ -217,12 +217,12 @@ func (g GithubProcessor) ProcessCommits(data []byte, tags map[string]string) ([]
 	for _, c := range commits {
 		var commit Commit
 		commit.DocumentType = "commit"
-		commit.Message = *c.Commit.Message
+		commit.Message = c.Commit.GetMessage()
 		commit.RepoType = "github"
-		commit.CommitURL = *c.URL
-		commit.Sha = *c.SHA
-		commit.CreatedAt = *c.Commit.Committer.Date
-		commit.Committer.ID = strconv.FormatInt(*c.Committer.ID, 10)
+		commit.CommitURL = c.GetURL()
+		commit.Sha = c.GetSHA()
+		commit.CreatedAt = c.Commit.Committer.GetDate().Local()
+		commit.Committer.ID = strconv.FormatInt(c.Committer.GetID(), 10)
 		commit.Committer.User = c.Commit.Author.GetName()
 		commitDocuments = append(commitDocuments, commit)
 	}
@@ -247,29 +247,29 @@ func (g GithubProcessor) ProcessPullRequests(data []byte, tags map[string]string
 		pr.DocumentType = "pull_request"
 		pr.RepoName = g.RepoName
 		pr.RepoURL = g.RepoURL
-		pr.CreatedAt = *p.CreatedAt
-		pr.UpdatedAt = *p.UpdatedAt
-		pr.ClosedAt = *p.ClosedAt
-		pr.State = *p.State
-		pr.URL = *p.URL
-		pr.Title = *p.Title
-		pr.MergedAt = *p.MergedAt
-		pr.MergeCommitSha = *p.MergeCommitSHA
+		pr.CreatedAt = p.GetCreatedAt().Local()
+		pr.UpdatedAt = p.GetUpdatedAt().Local()
+		pr.ClosedAt = p.GetClosedAt().Local()
+		pr.State = p.GetState()
+		pr.URL = p.GetURL()
+		pr.Title = p.GetTitle()
+		pr.MergedAt = p.GetMergedAt().Local()
+		pr.MergeCommitSha = p.GetMergeCommitSHA()
 		var reqFromRepo RequestFromRepository
-		reqFromRepo.Branch = *p.Head.Ref
+		reqFromRepo.Branch = p.Head.GetRef()
 		reqFromRepo.ByUser.ID = strconv.FormatInt(p.Head.User.GetID(), 10)
 		reqFromRepo.ByUser.User = p.Head.User.GetLogin()
 		reqFromRepo.Name = p.Head.Repo.GetFullName()
-		reqFromRepo.Private = *p.Head.Repo.Private
-		reqFromRepo.URL = *p.Head.Repo.URL
-		reqFromRepo.Sha = *p.Head.SHA
+		reqFromRepo.Private = p.Head.Repo.GetPrivate()
+		reqFromRepo.URL = p.Head.Repo.GetURL()
+		reqFromRepo.Sha = p.Head.GetSHA()
 		pr.RequestFromRepo = reqFromRepo
 		var mergeToRepo MergeToRepository
 		mergeToRepo.Name = p.Base.Repo.GetFullName()
-		mergeToRepo.Branch = *p.Base.Ref
-		mergeToRepo.Private = *p.Base.Repo.Private
-		mergeToRepo.Sha = *p.Base.SHA
-		mergeToRepo.URL = *p.Base.Repo.URL
+		mergeToRepo.Branch = p.Base.GetRef()
+		mergeToRepo.Private = p.Base.Repo.GetPrivate()
+		mergeToRepo.Sha = p.Base.GetSHA()
+		mergeToRepo.URL = p.Base.Repo.GetURL()
 		pr.MergeToRepo = mergeToRepo
 		var reviewers []User
 		for _, rr := range p.RequestedReviewers {
@@ -307,10 +307,10 @@ func (g GithubProcessor) ProcessIssues(data []byte, tags map[string]string) ([]i
 			issue.RepoURL = g.RepoURL
 			issue.IssueNo = strconv.Itoa(i.GetNumber())
 			issue.Title = i.GetTitle()
-			issue.URL = *i.URL
+			issue.URL = i.GetURL()
 			issue.State = i.GetState()
-			issue.CreatedAt = *i.CreatedAt
-			issue.UpdatedAt = *i.UpdatedAt
+			issue.CreatedAt = i.GetCreatedAt().Local()
+			issue.UpdatedAt = i.GetUpdatedAt().Local()
 			issue.CreatedBy.ID = strconv.FormatInt(i.User.GetID(), 10)
 			issue.CreatedBy.User = i.User.GetLogin()
 			var assignees []User
