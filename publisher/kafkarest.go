@@ -69,6 +69,9 @@ func (kc *KafkaRestClient) Publish(data []interface{}) error {
 		bulkdata []byte
 		err      error
 	)
+	if len(data) == 0 {
+		return nil
+	}
 	client := HTTPClientWithRetry()
 	const recordStart = `{"records":[`
 	const recordEnd = `]}`

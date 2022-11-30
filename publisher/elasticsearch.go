@@ -101,6 +101,9 @@ type Error struct {
 
 // Publish pushes the data to target
 func (es *ElasticSearchClient) Publish(data []interface{}) error {
+	if len(data) == 0 {
+		return nil
+	}
 	client := HTTPClientWithRetry()
 	var (
 		bulkdata []byte

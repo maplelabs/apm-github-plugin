@@ -25,7 +25,7 @@ func init() {
 
 //Add various client constant here
 const (
-	KAFKAREST     = "kafka"
+	KAFKAREST     = "kafka-rest"
 	ELASTICSEARCH = "elasticsearch"
 )
 
