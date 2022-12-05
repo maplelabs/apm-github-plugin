@@ -64,6 +64,7 @@ func (gc *GithubClient) CheckCredentials() error {
 
 // GetCommits fetches commits for the user
 func (gc *GithubClient) GetCommits(from time.Time, to time.Time, branch string) ([]byte, error) {
+	log.Debug("commit to be fetched from branch %v for repository %v after %v to %v", branch, gc.RepositoryName, from, to)
 	opt := &github.CommitsListOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 		SHA:         branch,
@@ -89,6 +90,7 @@ func (gc *GithubClient) GetCommits(from time.Time, to time.Time, branch string) 
 
 // GetPullRequests fetches pull request for the user
 func (gc *GithubClient) GetPullRequests(fromNo int) ([]byte, error) {
+	log.Debug("pull requests to be fetched from pull_request no. %v repository %v", fromNo, gc.RepositoryName)
 	opt := &github.PullRequestListOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 		State:       "all",
@@ -116,6 +118,7 @@ func (gc *GithubClient) GetPullRequests(fromNo int) ([]byte, error) {
 
 // GetIssues fetches issues for the user
 func (gc *GithubClient) GetIssues(from time.Time) ([]byte, error) {
+	log.Debug("issues to be fetched after %v for repository %v", from, gc.RepositoryName)
 	opt := &github.IssueListByRepoOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 		State:       "all",

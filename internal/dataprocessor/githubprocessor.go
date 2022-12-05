@@ -9,6 +9,13 @@ import (
 	"github.com/maplelabs/github-audit/metricformator"
 )
 
+const (
+	COMMIT      = "commit"
+	PULLREQUEST = "pull_request"
+	ISSUE       = "issue"
+	GITHUB      = "github"
+)
+
 // GithubProcessor process data from github APIs
 type GithubProcessor struct {
 	// Repository Name
@@ -211,14 +218,16 @@ func (g GithubProcessor) ProcessCommits(data []byte, tags map[string]string) ([]
 	commitDocuments := make([]interface{}, 0)
 	err := json.Unmarshal(data, &commits)
 	if err != nil {
-		log.Errorf("error[%v] in unmarshalling commits", err)
+		log.Errorf("error[%v] in unmarshalling commits for repository %v", err, g.RepoName)
 		return commitDocuments, err
 	}
 	for _, c := range commits {
 		var commit Commit
-		commit.DocumentType = "commit"
+		commit.RepoName = g.RepoName
+		commit.RepoURL = g.RepoURL
+		commit.DocumentType = COMMIT
 		commit.Message = c.Commit.GetMessage()
-		commit.RepoType = "github"
+		commit.RepoType = GITHUB
 		commit.CommitURL = c.GetURL()
 		commit.Sha = c.GetSHA()
 		commit.CreatedAt = c.Commit.Committer.GetDate().Local()
@@ -238,13 +247,14 @@ func (g GithubProcessor) ProcessPullRequests(data []byte, tags map[string]string
 	prDocuments := make([]interface{}, 0)
 	err := json.Unmarshal(data, &pullRequests)
 	if err != nil {
-		log.Errorf("error[%v] in unmarshalling pull requests", err)
+		log.Errorf("error[%v] in unmarshalling pull requests for repository %v", err, g.RepoName)
 		return prDocuments, err
 	}
 	for _, p := range pullRequests {
 		var pr PullRequest
 		pr.PullRequestNo = strconv.Itoa(p.GetNumber())
-		pr.DocumentType = "pull_request"
+		pr.DocumentType = PULLREQUEST
+		pr.RepoType = GITHUB
 		pr.RepoName = g.RepoName
 		pr.RepoURL = g.RepoURL
 		pr.CreatedAt = p.GetCreatedAt().Local()
@@ -294,15 +304,15 @@ func (g GithubProcessor) ProcessIssues(data []byte, tags map[string]string) ([]i
 	issueDocuments := make([]interface{}, 0)
 	err := json.Unmarshal(data, &issues)
 	if err != nil {
-		log.Errorf("error[%v] in unmarshalling pull requests", err)
+		log.Errorf("error[%v] in unmarshalling pull requests for repository %v", err, g.RepoName)
 		return issueDocuments, err
 	}
 	for _, i := range issues {
 		// only capturing issues
 		if i.PullRequestLinks == nil {
 			var issue Issue
-			issue.DocumentType = "issue"
-			issue.RepoType = "github"
+			issue.DocumentType = ISSUE
+			issue.RepoType = GITHUB
 			issue.RepoName = g.RepoName
 			issue.RepoURL = g.RepoURL
 			issue.IssueNo = strconv.Itoa(i.GetNumber())
