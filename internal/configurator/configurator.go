@@ -79,7 +79,15 @@ func createTask(auditJob input.AuditJob, targets []input.Target) (*task.Task, er
 func createTaskParam(auditJob input.AuditJob, targets []input.Target, decodedKey string) task.TaskParams {
 	var taskParam task.TaskParams
 	taskParam.Config = auditJob
-	taskParam.Targets = targets
+	jobTargets := make([]input.Target, 0)
+	for _, tar := range targets {
+		for i := range auditJob.Output.TargetName {
+			if auditJob.Output.TargetName[i] == tar.Name {
+				jobTargets = append(jobTargets, tar)
+			}
+		}
+	}
+	taskParam.Targets = jobTargets
 	taskParam.DecodeAccessKey = decodedKey
 	return taskParam
 }
