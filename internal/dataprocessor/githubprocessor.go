@@ -69,6 +69,9 @@ type Commit struct {
 
 	// Sha represents commit sha
 	Sha string `json:"sha"`
+
+	// time in milliseconds
+	Time int64 `json:"time"`
 }
 
 // User represents a git user
@@ -129,6 +132,9 @@ type PullRequest struct {
 
 	// MergeToRepo shows the base repository where pull request will be merged
 	MergeToRepo MergeToRepository `json:"merge_to_repo"`
+
+	// time in milliseconds
+	Time int64 `json:"time"`
 }
 
 // RequestFromRepository represents from where pull request is raised
@@ -210,6 +216,9 @@ type Issue struct {
 
 	// Assignees represents issue assignees
 	Assignees []User `json:"assignees"`
+
+	// time in milliseconds
+	Time int64 `json:"time"`
 }
 
 // ProcessCommits prepares commit output documents
@@ -233,6 +242,7 @@ func (g GithubProcessor) ProcessCommits(data []byte, tags map[string]string) ([]
 		commit.CreatedAt = c.Commit.Committer.GetDate().Local()
 		commit.Committer.ID = strconv.FormatInt(c.Committer.GetID(), 10)
 		commit.Committer.User = c.Commit.Author.GetName()
+		commit.Time = g.CurrentTimeInMS
 		commitDocuments = append(commitDocuments, commit)
 	}
 	b, _ := json.Marshal(commitDocuments)
@@ -265,6 +275,7 @@ func (g GithubProcessor) ProcessPullRequests(data []byte, tags map[string]string
 		pr.Title = p.GetTitle()
 		pr.MergedAt = p.GetMergedAt().Local()
 		pr.MergeCommitSha = p.GetMergeCommitSHA()
+		pr.Time = g.CurrentTimeInMS
 		var reqFromRepo RequestFromRepository
 		reqFromRepo.Branch = p.Head.GetRef()
 		reqFromRepo.ByUser.ID = strconv.FormatInt(p.Head.User.GetID(), 10)
@@ -319,6 +330,7 @@ func (g GithubProcessor) ProcessIssues(data []byte, tags map[string]string) ([]i
 			issue.Title = i.GetTitle()
 			issue.URL = i.GetURL()
 			issue.State = i.GetState()
+			issue.Time = g.CurrentTimeInMS
 			issue.CreatedAt = i.GetCreatedAt().Local()
 			issue.UpdatedAt = i.GetUpdatedAt().Local()
 			issue.CreatedBy.ID = strconv.FormatInt(i.User.GetID(), 10)
