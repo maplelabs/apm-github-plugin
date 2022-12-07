@@ -68,8 +68,8 @@ func (gc *GithubClient) GetCommits(from time.Time, to time.Time, branch string) 
 	opt := &github.CommitsListOptions{
 		ListOptions: github.ListOptions{PerPage: 100},
 		SHA:         branch,
-		Since:       from,
-		Until:       to,
+		Since:       from.UTC(),
+		Until:       to.UTC(),
 	}
 	var allCommits []*github.RepositoryCommit
 	for {
