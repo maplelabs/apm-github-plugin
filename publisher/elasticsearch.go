@@ -30,7 +30,7 @@ type ElasticSearchClient struct {
 	Index string `yaml:"index" json:"index"`
 
 	// Username if basic auth is used
-	Username string `yaml:"user,omitempty" json:"user,omitempty"`
+	Username string `yaml:"username,omitempty" json:"username,omitempty"`
 
 	// Password if basic auth is used
 	Password string `yaml:"password,omitempty" json:"password,omitempty"`
@@ -238,6 +238,7 @@ func (es *ElasticSearchClient) getESVersion() bool {
 			BuildHash                        string    `json:"build_hash"`
 			BuildDate                        time.Time `json:"build_date"`
 			BuildSnapshot                    bool      `json:"build_snapshot"`
+			Distribution                     string    `json:"distribution"`
 			LuceneVersion                    string    `json:"lucene_version"`
 			MinimumWireCompatibilityVersion  string    `json:"minimum_wire_compatibility_version"`
 			MinimumIndexCompatibilityVersion string    `json:"minimum_index_compatibility_version"`
@@ -252,7 +253,29 @@ func (es *ElasticSearchClient) getESVersion() bool {
 		url = fmt.Sprintf("https://%s:%s/", es.Host, es.Port)
 	}
 	client := HTTPClientWithRetry()
-	resp, err := client.Get(url)
+	request, err := retryhttp.NewRequest(
+		http.MethodGet,
+		url,
+		nil,
+	)
+	request.Header.Set("Content-Type", "application/json")
+	if es.Username != "" && es.Password != "" {
+		request.SetBasicAuth(es.Username, es.Password)
+	}
+	timeout, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	reqWithTimeout := request.WithContext(timeout)
+	if es.Protocol == "https" {
+		client.HTTPClient.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+			Proxy: http.ProxyFromEnvironment,
+		}
+	}
+
+	resp, err := client.Do(reqWithTimeout)
 	if err != nil {
 		log.Errorf("error[%v] request to get es version failed with error", err)
 		return false
@@ -263,6 +286,7 @@ func (es *ElasticSearchClient) getESVersion() bool {
 		log.Errorf("error[%v] failed to read response body", err)
 		return false
 	}
+	log.Debug("response to version check ", string(respBody))
 	var esResp EsResponse
 	err = json.Unmarshal(respBody, &esResp)
 	if err != nil {
@@ -270,7 +294,9 @@ func (es *ElasticSearchClient) getESVersion() bool {
 		return false
 	}
 	version := esResp.Version.Number
-	if strings.HasPrefix(version, "7") {
+	dist := esResp.Version.Distribution
+	// if opensearch is used it is es ver7 onwards always
+	if strings.HasPrefix(version, "7") || strings.ToLower(dist) == "opensearch" {
 		return true
 	} else {
 		return false
