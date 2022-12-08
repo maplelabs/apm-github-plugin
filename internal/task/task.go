@@ -92,14 +92,14 @@ func init() {
 	if err == nil {
 		fileByte, err := os.ReadFile(taskStatsFile)
 		if err != nil {
-			log.Error("error[%v] in reading task stats file", err)
+			log.Errorf("error[%v] in reading task stats file", err)
 		}
 		err = json.Unmarshal(fileByte, &TaskStatsMap)
 		if err != nil {
-			log.Error("error[%v] in unmarshalling task stats file", err)
+			log.Errorf("error[%v] in unmarshalling task stats file", err)
 		}
 	} else {
-		log.Error("error[%v] in reading task stats file", err)
+		log.Errorf("error[%v] in reading task stats file", err)
 	}
 }
 
@@ -129,11 +129,13 @@ func SaveTaskStatsPeriodic(ctx context.Context) {
 // getTaskStats returns task stats for particular task.
 func getTaskStats(id string) (TaskStats, error) {
 	taskStatsMutex.Lock()
+	var ts TaskStats
+	ts.LastCommitTime = make(map[string]time.Time)
 	defer taskStatsMutex.Unlock()
 	if v, ok := TaskStatsMap[id]; ok {
 		return v, nil
 	}
-	return TaskStats{}, errors.New("task not found")
+	return ts, errors.New("task not found")
 }
 
 // saveTaskStats saves task stats for a particular task.
@@ -146,10 +148,6 @@ func saveTaskStats(id string, ts TaskStats) {
 // Newtask returns new task instance.
 func Newtask() *Task {
 	task := new(Task)
-	// keeping previous time to -N minutes before scheduling interval.
-	task.PreviousRunTime = time.Now().Add(-task.SchedulingInterval)
-	// keeping nextruntime as current time.
-	task.NextRunTime = time.Now()
 	return task
 }
 
@@ -162,6 +160,10 @@ func (t *Task) AddTaskParams(tp TaskParams) {
 // AddInterval methods adds tasks scheduling interval.
 func (t *Task) AddInterval(interval time.Duration) {
 	t.SchedulingInterval = interval
+	// keeping previous time to -N minutes before scheduling interval
+	t.PreviousRunTime = time.Now().Add(-(t.SchedulingInterval))
+	// keeping nextruntime as current time.
+	t.NextRunTime = time.Now().Add(-(t.SchedulingInterval))
 }
 
 // scheduleNextRunOfTask schedules the next run of the task.
@@ -169,15 +171,14 @@ func (task *Task) ScheduleNextRunOfTask() {
 	task.NextRunTime = time.Now().Add(task.SchedulingInterval)
 }
 
-// Start methods starts teh execution of a particular task.
+// Start methods starts the execution of a particular task.
 func (t *Task) Start() error {
-	var ts TaskStats
 	ts, err := getTaskStats(t.ID)
 	// if error reading previous stats , putting default values for task stats map
 	if err != nil {
-		ts.LastIssueTime = t.PreviousRunTime
+		ts.LastIssueTime = time.Now().Add(-(t.SchedulingInterval))
 		for _, br := range t.Config.Branches {
-			ts.LastCommitTime[br] = t.PreviousRunTime
+			ts.LastCommitTime[br] = time.Now().Add(-(t.SchedulingInterval))
 		}
 		ts.LastPullRequestNo = 0
 		ts.TaskID = t.ID
@@ -242,7 +243,8 @@ func (t *Task) Stop() error {
 // collectAndPublishCommits collects commits and publish them to targets.
 func (t *Task) collectAndPublishCommits(gp gitprovider.GitProvider, pb publisher.Publisher, dp dataprocessor.DataProcessor, ts TaskStats) error {
 	var err error
-	errChan := make(chan error)
+	errChan := make(chan error, len(t.Config.Branches))
+	defer close(errChan)
 	// max concurrency guard to control goroutines
 	maxConcurrencyGuard := make(chan struct{}, runtime.NumCPU()*2)
 	for _, br := range t.Config.Branches {
@@ -271,8 +273,9 @@ func (t *Task) collectAndPublishCommits(gp gitprovider.GitProvider, pb publisher
 			// saving stats after finished task
 			for _, v := range processed {
 				//taking latest commit time
-				lastCommitTime := v.(dataprocessor.Commit).CreatedAt
-				ts.LastCommitTime[br] = lastCommitTime
+				lastCommitTime := v.(map[string]interface{})
+				timeParsed, _ := time.Parse(time.RFC3339, lastCommitTime["created_at"].(string))
+				ts.LastCommitTime[br] = timeParsed
 				saveTaskStats(t.ID, ts)
 				break
 			}
@@ -280,7 +283,8 @@ func (t *Task) collectAndPublishCommits(gp gitprovider.GitProvider, pb publisher
 		}(br, maxConcurrencyGuard, errChan)
 	}
 	//waiting for all goroutines to complete based on errChannel
-	for errVal := range errChan {
+	for i := 0; i < len(t.Config.Branches); i++ {
+		errVal := <-errChan
 		if errVal != nil {
 			err = errVal
 		}
@@ -295,7 +299,7 @@ func (t *Task) collectAndPublishPullRequests(gp gitprovider.GitProvider, pb publ
 		log.Errorf("error[%v] in getting commits from gitprovider for task with ID %v", err, t.ID)
 		return err
 	}
-	processed, err := dp.ProcessCommits(prBytes, t.Config.Tags)
+	processed, err := dp.ProcessPullRequests(prBytes, t.Config.Tags)
 	if err != nil {
 		log.Errorf("error[%v] in processing pull requests for task with ID %v", err, t.ID)
 		return err
@@ -308,8 +312,8 @@ func (t *Task) collectAndPublishPullRequests(gp gitprovider.GitProvider, pb publ
 	// saving stats after finished task
 	for _, v := range processed {
 		//taking latest pull request number
-		lastPrNo := v.(dataprocessor.PullRequest).PullRequestNo
-		ts.LastPullRequestNo, _ = strconv.Atoi(lastPrNo)
+		lastPrNo := v.(map[string]interface{})
+		ts.LastPullRequestNo, _ = strconv.Atoi(lastPrNo["pull_request_no"].(string))
 		saveTaskStats(t.ID, ts)
 		break
 	}
@@ -323,7 +327,7 @@ func (t *Task) collectAndPublishIssues(gp gitprovider.GitProvider, pb publisher.
 		log.Errorf("error[%v] in getting commits from gitprovider for task with ID %v", err, t.ID)
 		return err
 	}
-	processed, err := dp.ProcessCommits(issuesBytes, t.Config.Tags)
+	processed, err := dp.ProcessIssues(issuesBytes, t.Config.Tags)
 	if err != nil {
 		log.Errorf("error[%v] in processing issues for task with ID %v", err, t.ID)
 		return err
@@ -336,8 +340,9 @@ func (t *Task) collectAndPublishIssues(gp gitprovider.GitProvider, pb publisher.
 	// saving stats after finished task
 	for _, v := range processed {
 		//taking latest issue time
-		lastIssueTime := v.(dataprocessor.Issue).CreatedAt
-		ts.LastIssueTime = lastIssueTime
+		lastIssueTime := v.(map[string]interface{})
+		timeParsed, _ := time.Parse(time.RFC3339, lastIssueTime["created_at"].(string))
+		ts.LastIssueTime = timeParsed
 		saveTaskStats(t.ID, ts)
 		break
 	}

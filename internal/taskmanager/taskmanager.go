@@ -96,8 +96,8 @@ func (tm *TaskManager) getReadyTasks() []*task.Task {
 			continue
 		}
 		atomic.StoreInt64(&task.IsRunning, 1)
+		task.PreviousRunTime = task.NextRunTime
 		task.ScheduleNextRunOfTask()
-		task.PreviousRunTime = currentTime
 		readyTaskQueue = append(readyTaskQueue, task)
 	}
 	return readyTaskQueue
