@@ -7,10 +7,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"strings"
 	"time"
+	"strconv"
 
 	retryhttp "github.com/hashicorp/go-retryablehttp"
 )
@@ -26,7 +27,7 @@ type ElasticSearchClient struct {
 	// Protocol to connect to elasticsearch
 	Protocol string `yaml:"protocol" json:"protocol"`
 
-	// Index to send data to
+	// Index or profile name to send data 
 	Index string `yaml:"index" json:"index"`
 
 	// Username if basic auth is used
@@ -35,8 +36,12 @@ type ElasticSearchClient struct {
 	// Password if basic auth is used
 	Password string `yaml:"password,omitempty" json:"password,omitempty"`
 
-	// ES_7x to know if target is elastic version 7.x
-	ES_7x bool `yaml:"es_7x" json:"es_7x"`
+	// ES_7x to know if target is before elastic version 7.x
+	ES_7x string `yaml:"old_es" json:"old_es"`
+
+	// Path to send github data to target project
+	Path string `yaml:"path" json:"path"`
+
 }
 
 // BulkResponse ...
@@ -101,6 +106,8 @@ type Error struct {
 
 // Publish pushes the data to target
 func (es *ElasticSearchClient) Publish(data []interface{}) error {
+	log.Debugf("In Publish: data: %+v", data)
+	log.Infof("In Publish: es: %+v", es)
 	if len(data) == 0 {
 		return nil
 	}
@@ -124,8 +131,9 @@ func (es *ElasticSearchClient) Publish(data []interface{}) error {
 	}
 
 	bulkdata = append(bulkdata, bulkEnd...)
-
+    log.Debugf("Publish bulkdata: %v", len(bulkdata))
 	reqURL := fmt.Sprintf("%s_bulk/", es.getURL())
+	log.Infof("reqURL: %v", reqURL)
 	request, err := retryhttp.NewRequest(
 		http.MethodPost,
 		reqURL,
@@ -162,7 +170,7 @@ func (es *ElasticSearchClient) Publish(data []interface{}) error {
 	}
 	defer response.Body.Close()
 
-	respBody, err := ioutil.ReadAll(response.Body)
+	respBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		log.Errorf("error[%v] failed to read response body", err)
 	}
@@ -209,19 +217,18 @@ func (es *ElasticSearchClient) Publish(data []interface{}) error {
 // getURL returns url to elasticendpoint for writing data
 func (es *ElasticSearchClient) getURL() string {
 	var url, esType string
-	es.ES_7x = es.getESVersion()
-	if !es.ES_7x {
+	log.Debugf("getURL es.ES_7x: %v", es.ES_7x)
+	//es.ES_7x = es.getESVersion()
+	boolFlag, _ := strconv.ParseBool(es.ES_7x)
+	if boolFlag {
 		esType = "doc"
 	} else {
 		esType = "_doc"
 	}
-
-	switch es.Protocol {
-	case "http":
-		url = fmt.Sprintf("http://%s:%s/%s/%s/", es.Host, es.Port, es.Index, esType)
-	case "https":
-		url = fmt.Sprintf("https://%s:%s/%s/%s/", es.Host, es.Port, es.Index, esType)
-	}
+	// create target path to push data, eg, metric-<profile>-<project>-$_write
+	profilePath := "metric-" + es.Index + "-" + es.Path + "-$_write/" + esType
+	url = fmt.Sprintf("%s://%s:%s/%s/", es.Protocol, es.Host, es.Port, profilePath)
+	log.Infof("ES getURL url: %v", url)
 	return url
 }
 
@@ -252,6 +259,7 @@ func (es *ElasticSearchClient) getESVersion() bool {
 	case "https":
 		url = fmt.Sprintf("https://%s:%s/", es.Host, es.Port)
 	}
+	log.Infof("getESVersion url: %v", url)
 	client := HTTPClientWithRetry()
 	request, err := retryhttp.NewRequest(
 		http.MethodGet,
@@ -276,12 +284,13 @@ func (es *ElasticSearchClient) getESVersion() bool {
 	}
 
 	resp, err := client.Do(reqWithTimeout)
+	log.Infof("getESVersion resp: %v", resp)
 	if err != nil {
 		log.Errorf("error[%v] request to get es version failed with error", err)
 		return false
 	}
 	defer resp.Body.Close()
-	respBody, err := ioutil.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Errorf("error[%v] failed to read response body", err)
 		return false
