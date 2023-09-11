@@ -47,7 +47,12 @@ auditJobs:
 ## metadata if any required like tags etc
   metadata:
   tags:
-    tag1: tag1value
+    ## instance
+    _tag_Name: "localdomain"
+    ## project name used in snappyflow
+    _tag_projectName: "apm-github-plugin-test"
+    ## project app name used in snappyflow
+    _tag_appName: "apm-github-plugin"
   ## git saas provider like github,bitbucket etc <REQUIRED>
   repo_host: github
   ## git repository name  <REQUIRED>
@@ -87,10 +92,15 @@ targets:
 - name: es1
   type: elasticsearch
   config:
+    ## snappyflow url and access credential 
     host: localhost
     port: "443"
     protocol: https
     index: test-index
     username: test-user
     password: xxxx
+    ## before elasticsearch 7x
+    old_es: "false"
+    ## name of project in snappyflow
+    path: apm-github-plugin-test
 ```
